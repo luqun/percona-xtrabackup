@@ -550,6 +550,20 @@ include(CheckCXXSourceCompiles)
 MACRO (MY_CHECK_C_COMPILER_FLAG FLAG RESULT)
   CMAKE_PUSH_CHECK_STATE()
   STRING_APPEND(CMAKE_REQUIRED_FLAGS " ${FLAG}")
+  # As mentioned above, CMAKE_C_SOURCE_COMPILES not only compiles the source
+  # but also performs linking to create the binary. The problem is that cmake
+  # automatically appends CFLAGS to the linker command, and there's no way to
+  # stop that.
+  # When '-nostdinc' option is included in CFLAGS, clang spits
+  # 'unused-command-line-argument' warning as the option is only valid for
+  # a compiler but not for a linker. Here we temporarily silience the warning
+  # for linking to pass the check. The warning is still enabled for the
+  # compilation command.
+  IF(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    SET(SAVE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+    SET(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}
+        -Wno-unused-command-line-argument")
+  ENDIF()
   CHECK_C_SOURCE_COMPILES("int main(void) { return 0; }" ${RESULT}
     FAIL_REGEX "unknown argument ignored"
     FAIL_REGEX "argument unused during compilation"
@@ -567,6 +581,20 @@ ENDMACRO()
 MACRO (MY_CHECK_CXX_COMPILER_FLAG FLAG RESULT)
   CMAKE_PUSH_CHECK_STATE()
   STRING_APPEND(CMAKE_REQUIRED_FLAGS " ${FLAG}")
+  IF(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    SET(CMAKE_REQUIRED_LIBRARIES "${SAVE_CMAKE_REQUIRED_LIBRARIES}")
+  ENDIF()
+  SET(CMAKE_REQUIRED_FLAGS "${SAVE_CMAKE_REQUIRED_FLAGS}")
+ENDMACRO()
+
+MACRO (MY_CHECK_CXX_COMPILER_FLAG FLAG RESULT)
+  SET(SAVE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+  SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${FLAG}")
+  IF(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    SET(SAVE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+    SET(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}
+        -Wno-unused-command-line-argument")
+  ENDIF()
   CHECK_CXX_SOURCE_COMPILES("int main(void) { return 0; }" ${RESULT}
     FAIL_REGEX "unknown argument ignored"
     FAIL_REGEX "argument unused during compilation"
@@ -579,6 +607,10 @@ MACRO (MY_CHECK_CXX_COMPILER_FLAG FLAG RESULT)
     FAIL_REGEX "warning: visibility"
     )
   CMAKE_POP_CHECK_STATE()
+  IF(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    SET(CMAKE_REQUIRED_LIBRARIES "${SAVE_CMAKE_REQUIRED_LIBRARIES}")
+  ENDIF()
+  SET(CMAKE_REQUIRED_FLAGS "${SAVE_CMAKE_REQUIRED_FLAGS}")
 ENDMACRO()
 
 # Check whether a specific warning option is supported.
