@@ -560,9 +560,7 @@ MACRO (MY_CHECK_C_COMPILER_FLAG FLAG RESULT)
   # for linking to pass the check. The warning is still enabled for the
   # compilation command.
   IF(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    SET(SAVE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-    SET(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}
-        -Wno-unused-command-line-argument")
+    SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-unused-command-line-argument")
   ENDIF()
   CHECK_C_SOURCE_COMPILES("int main(void) { return 0; }" ${RESULT}
     FAIL_REGEX "unknown argument ignored"
@@ -591,9 +589,7 @@ MACRO (MY_CHECK_CXX_COMPILER_FLAG FLAG RESULT)
   SET(SAVE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${FLAG}")
   IF(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    SET(SAVE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-    SET(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}
-        -Wno-unused-command-line-argument")
+    SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-unused-command-line-argument")
   ENDIF()
   CHECK_CXX_SOURCE_COMPILES("int main(void) { return 0; }" ${RESULT}
     FAIL_REGEX "unknown argument ignored"
