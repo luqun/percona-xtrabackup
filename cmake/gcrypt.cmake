@@ -29,13 +29,21 @@ MACRO (FIND_GCRYPT)
     SET(GCRYPT_LIB_PATH /usr/lib /usr/local/lib /opt/local/lib)
   ENDIF()
 
-  FIND_LIBRARY(GCRYPT_LIB gcrypt PATHS ${GCRYPT_LIB_PATH})
-  FIND_LIBRARY(GPG_ERROR_LIB gpg-error PATHS ${GCRYPT_LIB_PATH})
+  IF (NOT GPG_ERROR_LIB_PATH)
+    SET(GPG_ERROR_LIB_PATH /usr/lib /usr/local/lib /opt/local/lib)
+  ENDIF()
 
-  IF (NOT GCRYPT_LIB OR NOT GPG_ERROR_LIB)
+  # Use static library due to platform007 runtime doesn't contain these libraries
+  FIND_LIBRARY(GCRYPT_LIB libgcrypt.a PATHS ${GCRYPT_LIB_PATH})
+  FIND_LIBRARY(GPG_ERROR_LIB libgpg-error.a PATHS ${GPG_ERROR_LIB_PATH})
+
+  IF (NOT GCRYPT_LIB)
     MESSAGE(SEND_ERROR "Cannot find libgcrypt shared libraries in ${GCRYPT_LIB_PATH}. You can use libgcrypt-config --libs to get the necessary path and pass it to CMake with -DGCRYPT_LIB_PATH=<path>")
   ENDIF()
 
+  IF (NOT GPG_ERROR_LIB)
+    MESSAGE(SEND_ERROR "Cannot find libgpg-error shared libraries in ${GPG_ERROR_LIB_PATH}. You can use libgcrypt-config --libs to get the necessary path and pass it to CMake with -DGPG_ERROR_LIB_PATH=<path>")
+  ENDIF()
   SET(GCRYPT_LIBS ${GCRYPT_LIB} ${GPG_ERROR_LIB})
 
 ENDMACRO()
