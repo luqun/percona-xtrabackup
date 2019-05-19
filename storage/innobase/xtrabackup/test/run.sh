@@ -38,7 +38,7 @@ TOTAL_TIME=0
 function usage()
 {
 cat <<EOF
-Usage: $0 [-f] [-g] [-h] [-s suite] [-t test_name] [-d mysql_basedir] [-c build_conf]
+Usage: $0 [-f] [-g] [-h] [-s suite] [-t test_name] [-d mysql_basedir] [-c build_conf] [-b xtraback_basedir]
 -f          Continue running tests after failures
 -d path     Server installation directory. Default is './server'.
 -g          Debug mode
@@ -51,6 +51,7 @@ Usage: $0 [-f] [-g] [-h] [-s suite] [-t test_name] [-d mysql_basedir] [-c build_
 -x options  Extra options to pass to xtrabackup
 -X options  Extra options to pass to mysqld
 -r path     Use specified path as root directory for test workers.
+-i path     xtrabackup build directory, such as _build-xtrabackup-8.0
 EOF
 }
 
@@ -299,6 +300,10 @@ function set_vars()
     if test -d $PWD/../bin
     then
         PATH="$PWD/../bin:$PATH"
+    fi
+
+    if [ -n "${XTRABACKUP_BUILD_DIR}" ]; then
+       PATH="${XTRABACKUP_BUILD_DIR}/bin:${XTRABACKUP_BUILD_DIR}/runtime_output_directory:$PATH"
     fi
 
     PATH="${MYSQL_BASEDIR}/bin:$PATH"
@@ -771,6 +776,7 @@ while getopts "fgh?:t:s:d:c:j:T:x:X:i:r:" options; do
             d ) export MYSQL_BASEDIR="$OPTARG";;
             c ) echo "Warning: -c does not have any effect and is only \
 recognized for compatibility";;
+            i ) export XTRABACKUP_BUILD_DIR="$OPTARG";;
             j )
 
                 if [[ ! $OPTARG =~ ^[0-9]+$ || $OPTARG < 1 ]]
