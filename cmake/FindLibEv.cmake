@@ -18,30 +18,38 @@
 #  LIBEV_LIBRARIES, LibEv libraries
 #  LIBEV_FOUND, If false, do not try to use ant
 
-find_path(LIBEV_INCLUDE_DIRS ev.h PATHS
+IF (NOT LIBEV_INCLUDE_PATH)
+  SET(LIBEV_INCLUDE_PATH
     /usr/include
     /usr/local/include
     /opt/local/include
     /usr/include/libev
   )
+ENDIF()
 
-set(LIBEV_LIB_PATHS /usr/lib /usr/local/lib /opt/local/lib)
-find_library(LIBEV_LIB NAMES ev PATHS ${LIBEV_LIB_PATHS})
+FIND_PATH(LIBEV_INCLUDE_DIRS ev.h PATHS ${LIBEV_INCLUDE_PATH})
 
-if (LIBEV_LIB AND LIBEV_INCLUDE_DIRS)
-  set(LIBEV_FOUND TRUE)
-  set(LIBEV_LIBRARIES ${LIBEV_LIB})
-else ()
-  set(LIBEV_FOUND FALSE)
-endif ()
+IF (NOT LIBEV_LIB_PATH)
+  SET(LIBEV_LIB_PATH /usr/lib /usr/local/lib /opt/local/lib)
+ENDIF()
 
-if (LIBEV_FOUND)
-  if (NOT LIBEV_FIND_QUIETLY)
-    message(STATUS "Found libev: ${LIBEV_LIBRARIES}")
-  endif ()
-else ()
-  message(STATUS "libev NOT found.")
-endif ()
+# Use static library since we don't distribute libev.so file in our runtime
+FIND_LIBRARY(LIBEV_LIB NAMES libev.a PATHS ${LIBEV_LIB_PATH})
+
+IF (LIBEV_LIB AND LIBEV_INCLUDE_DIRS)
+  SET(LIBEV_FOUND TRUE)
+  SET(LIBEV_LIBRARIES ${LIBEV_LIB})
+ELSE ()
+  SET(LIBEV_FOUND FALSE)
+ENDIF ()
+
+IF (LIBEV_FOUND)
+  IF (NOT LIBEV_FIND_QUIETLY)
+    MESSAGE(STATUS "Found libev: ${LIBEV_LIBRARIES}")
+  ENDIF ()
+ELSE ()
+  MESSAGE(STATUS "libev NOT found.")
+ENDIF ()
 
 mark_as_advanced(
     LIBEV_LIB
