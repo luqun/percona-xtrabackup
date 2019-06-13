@@ -17,6 +17,19 @@
 #include "system_key_adapter.h"
 #include "secure_string.h"
 
+#if !defined(HAVE_MEMSET_S)
+void memset_s(void *dest, size_t dest_max, int c, size_t n) {
+#if defined(WIN32)
+  SecureZeroMemory(dest, n);
+#else
+  volatile unsigned char *p = static_cast<unsigned char *>(dest);
+  while (dest_max-- && n--) {
+    *p++ = c;
+  }
+#endif
+}
+#endif
+
 namespace keyring {
 // Adds key's version to keyring's key data. The resulting system key data looks
 // like this: <key_version>:<keyring key data>

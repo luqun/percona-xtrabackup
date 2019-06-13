@@ -30,6 +30,10 @@
 #include "my_sys.h"
 #include "mysql/service_mysql_alloc.h"
 
+#if !defined(HAVE_MEMSET_S)
+  void memset_s(void *dest, size_t dest_max, int c, size_t n);
+#endif
+
 namespace keyring {
 
 extern PSI_memory_key key_memory_KEYRING;
