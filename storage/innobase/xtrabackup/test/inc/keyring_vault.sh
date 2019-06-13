@@ -5,13 +5,14 @@
 . inc/common.sh
 
 plugin_load=keyring_vault.so
-plugin_dir=$PWD/../../../../plugin_output_directory
+plugin_dir=${plugin_dir:-$PWD/../../../../plugin_output_directory}
 keyring_vault_config=${TEST_VAR_ROOT}/keyring_vault_config
 keyring_args="--keyring-vault-config=${keyring_vault_config}"
 
 MYSQLD_EXTRA_MY_CNF_OPTS="${MYSQLD_EXTRA_MY_CNF_OPTS:-""}
 early-plugin-load=${plugin_load}
 keyring-vault-config=${keyring_vault_config}
+plugin_dir=${plugin_dir}
 "
 
 XB_EXTRA_MY_CNF_OPTS="${XB_EXTRA_MY_CNF_OPTS:-""}

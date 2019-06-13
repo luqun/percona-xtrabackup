@@ -5,11 +5,12 @@
 . inc/common.sh
 
 plugin_load=keyring_file.so
-plugin_dir=$PWD/../../../../plugin_output_directory
+plugin_dir=${plugin_dir:-$PWD/../../../../plugin_output_directory}
 keyring_file=${TEST_VAR_ROOT}/keyring_file
 keyring_args="--keyring-file-data=${keyring_file}"
 
 MYSQLD_EXTRA_MY_CNF_OPTS="${MYSQLD_EXTRA_MY_CNF_OPTS:-""}
+plugin_dir=${plugin_dir}
 early-plugin-load=${plugin_load}
 keyring-file-data=${keyring_file}
 "
