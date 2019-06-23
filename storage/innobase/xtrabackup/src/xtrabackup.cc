@@ -1593,7 +1593,7 @@ bool xb_get_one_option(int optid, const struct my_option *opt, char *argument) {
   param_set.insert(opt->name);
   switch (optid) {
     case 'h':
-      strmake(mysql_real_data_home, argument, FN_REFLEN - 1);
+      fn_format(mysql_real_data_home, argument, "", "", MY_RETURN_REAL_PATH);
       mysql_data_home = mysql_real_data_home;
 
       ADD_PRINT_PARAM_OPT(mysql_real_data_home);
@@ -1675,8 +1675,7 @@ bool xb_get_one_option(int optid, const struct my_option *opt, char *argument) {
       break;
 
     case OPT_XTRA_TARGET_DIR:
-      strmake(xtrabackup_real_target_dir, argument,
-              sizeof(xtrabackup_real_target_dir) - 1);
+      fn_format(xtrabackup_real_target_dir, argument, "", "", MY_RETURN_REAL_PATH);
       xtrabackup_target_dir = xtrabackup_real_target_dir;
       break;
     case OPT_XTRA_STREAM:
