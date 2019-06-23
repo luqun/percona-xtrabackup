@@ -9873,7 +9873,8 @@ static void fil_make_abs_file_path(const char *file_name, ulint flags,
                                    std::string &tablespace_name) {
   Datafile df;
 
-  df.set_filepath(file_name);
+  auto abs_file_name = Fil_path::get_real_path(file_name);
+  df.set_filepath(abs_file_name.c_str());
   df.set_flags(flags);
   df.set_space_id(space_id);
   df.set_name(nullptr);
