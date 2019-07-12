@@ -68,6 +68,7 @@ static char *opt_encrypt_key = NULL;
 static int opt_encrypt_threads = 1;
 static bool opt_decompress = 0;
 static uint opt_decompress_threads = 1;
+static bool opt_o_direct = 0;
 
 enum { OPT_DECOMPRESS = 256, OPT_DECOMPRESS_THREADS, OPT_ENCRYPT_THREADS };
 
@@ -110,7 +111,8 @@ static struct my_option my_long_options[] = {
      "The default value is 1.",
      &opt_encrypt_threads, &opt_encrypt_threads, 0, GET_INT, REQUIRED_ARG, 1, 1,
      INT_MAX, 0, 0, 0},
-
+    {"o_direct", 'd', "Opening files with O_DIRECT.", &opt_o_direct,
+     &opt_o_direct, 0, GET_BOOL, NO_ARG, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, GET_NO_ARG, NO_ARG, 0, 0, 0, 0, 0, 0}};
 
 typedef struct {
@@ -255,25 +257,30 @@ static bool get_one_option(int optid,
   return false;
 }
 
-static int stream_one_file(File file, xb_wstream_file_t *xbfile) {
+static int stream_one_file(size_t file_size, File file, xb_wstream_file_t *xbfile) {
   uchar *buf;
   size_t bytes;
-  size_t offset;
+  size_t offset = 0;
 
   posix_fadvise(file, 0, 0, POSIX_FADV_SEQUENTIAL);
   offset = my_tell(file, MYF(MY_WME));
-
-  buf = (uchar *)(my_malloc(PSI_NOT_INSTRUMENTED, XBSTREAM_BUFFER_SIZE,
+  // Extending read unit on O_DIRECT since it can't use FS read ahead
+  const size_t chunk_size = opt_o_direct ? XBSTREAM_BUFFER_SIZE * 4 :  XBSTREAM_BUFFER_SIZE;
+  buf = (uchar *)(my_malloc(PSI_NOT_INSTRUMENTED, chunk_size,
                             MYF(MY_FAE)));
 
-  while ((bytes = my_read(file, buf, XBSTREAM_BUFFER_SIZE, MYF(MY_WME))) > 0) {
+  while ((bytes = my_read(file, buf, chunk_size, MYF(MY_WME))) > 0) {
     if (xb_stream_write_data(xbfile, buf, bytes)) {
       msg("%s: xb_stream_write_data() failed.\n", my_progname);
       my_free(buf);
       return 1;
     }
-    posix_fadvise(file, offset, XBSTREAM_BUFFER_SIZE, POSIX_FADV_DONTNEED);
-    offset += XBSTREAM_BUFFER_SIZE;
+    posix_fadvise(file, offset, chunk_size, POSIX_FADV_DONTNEED);
+    offset += bytes;
+    // O_DIRECT read raises EINVAL when reading after reaching
+    // EOF, since positions are not aligned anymore.
+    if (opt_o_direct && offset >= file_size)
+      break;
   }
 
   my_free(buf);
@@ -314,7 +321,12 @@ static int mode_create(int argc, char **argv) {
       goto err;
     }
 
-    if ((src_file = my_open(filepath, O_RDONLY, MYF(MY_WME))) < 0) {
+    size_t file_size = mystat.st_size;
+    int fileopt = O_RDONLY;
+    if (opt_o_direct) {
+      fileopt |= O_DIRECT;
+    }
+    if ((src_file = my_open(filepath, fileopt, MYF(MY_WME))) < 0) {
       msg("%s: failed to open %s.\n", my_progname, filepath);
       goto err;
     }
@@ -328,7 +340,7 @@ static int mode_create(int argc, char **argv) {
       msg("%s\n", filepath);
     }
 
-    if (stream_one_file(src_file, file) || xb_stream_write_close(file) ||
+    if (stream_one_file(file_size, src_file, file) || xb_stream_write_close(file) ||
         my_close(src_file, MYF(MY_WME))) {
       goto err;
     }
