@@ -83,7 +83,7 @@ class LZ4_stream {
 
   err_t next_block(block_info_t &block_info);
 
-  bool empty() const { return stream.empty(); };
+  bool empty() const { return stream.empty(); }
 
   size_t block_max_size() const { return frame_info.block_max_size; }
 

@@ -573,7 +573,7 @@ bool xbcloud_put(Object_store *store, const std::string &container,
   }
 
   xb_rstream_chunk_t chunk;
-  xb_rstream_result_t res;
+  xb_rstream_result_t res = XB_STREAM_READ_CHUNK;
 
   bool has_errors = false;
 
