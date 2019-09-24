@@ -75,6 +75,13 @@ ADD_COMPILE_FLAGS(
   backup_mysql.cc
   COMPILE_FLAGS -DMYSQL_CLIENT)
 
+IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Turn off array-bounds warning in backup_mysql.cc wich occurs
+  # when it uses the struct engine_info in the external memcached
+  # file engine.h to define its engine capabilities.
+  ADD_COMPILE_FLAGS(backup_copy.cc COMPILE_FLAGS "-Wno-array-bounds")
+ENDIF()
+
 MYSQL_ADD_EXECUTABLE(xtrabackup
   xtrabackup.cc
   changed_page_bitmap.cc
