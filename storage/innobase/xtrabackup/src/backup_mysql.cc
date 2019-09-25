@@ -1467,6 +1467,16 @@ size_t binlog_encryption_header_size(const char *filepath) {
   return (0);
 }
 
+uint split_file_name_and_gtid_set_length(char *file_name_and_gtid_set_length) {
+   char *save_ptr = NULL;
+   save_ptr = strchr(file_name_and_gtid_set_length, ' ');
+   if (save_ptr != NULL) {
+     save_ptr++;
+     return atol(save_ptr);
+   }
+   return 0;
+}
+
 /**
  Copy the current binary log file into the backup
 
@@ -1569,9 +1579,35 @@ bool write_current_binlog_file(MYSQL *connection) {
     char line[FN_REFLEN];
     if (fgets(line, sizeof(line), f_index) != nullptr) {
       if (strstr(line, log_status.filename.c_str()) != nullptr) {
-        backup_file_print(log_bin_index_filename, line, strlen(line));
-        result = true;
-        break;
+
+        uint prev_gtid_line_length = split_file_name_and_gtid_set_length(line) + 1;
+        char prev_gtid_line[FN_REFLEN]; // record prev gtid set content
+        
+        uint fread_ret_code = fread(prev_gtid_line, 1, prev_gtid_line_length, f_index); 
+        if (fread_ret_code == prev_gtid_line_length) {
+          char message[2 * FN_REFLEN + 1];
+          memset(message, 0, sizeof(message)* sizeof(char));
+          // construct message
+          uint file_name_line_length = strlen(line);
+          memcpy(message, line, file_name_line_length);
+          memcpy(message + file_name_line_length , prev_gtid_line, prev_gtid_line_length);
+          if (!backup_file_print(log_bin_index_filename, message, file_name_line_length + prev_gtid_line_length)) {
+               msg("xtrabackup::failed to write backup_file_printf");
+               result = false;
+               goto cleanup;
+           }
+           else {
+              result = true;
+              break;
+           }
+        }
+        else {
+           msg("xtrabackup: Error the log bin index file '%s' doesn't contain " 
+               "correct prev gtid set: Expect length:  %d, fread return length:  %d\n",
+               log_bin_index, prev_gtid_line_length, fread_ret_code);
+           result = false;
+           goto cleanup;
+        }
       }
     }
   }
